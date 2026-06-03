@@ -1,7 +1,7 @@
 locals {
   service_accounts = {
     eso = {
-      account_id   = "eso"
+      account_id   = "es-operator"
       display_name = "External Secrets Operator"
       roles        = ["roles/secretmanager.secretAccessor"]
     }

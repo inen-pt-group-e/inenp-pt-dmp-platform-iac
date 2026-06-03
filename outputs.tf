@@ -12,3 +12,13 @@ output "subnet_name" {
   description = "Name of the platform subnet"
   value       = google_compute_subnetwork.subnet.name
 }
+
+output "cluster_name" {
+  description = "GKE cluster name"
+  value       = google_container_cluster.platform.name
+}
+
+output "cluster_location" {
+  description = "GKE cluster location"
+  value       = google_container_cluster.platform.location
+}

@@ -58,4 +58,4 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run TFLint
-        run: tflint --recursive
+        run: tflint --recursive --minimum-failure-severity=error

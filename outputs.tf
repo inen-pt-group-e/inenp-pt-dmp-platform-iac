@@ -22,3 +22,8 @@ output "cluster_location" {
   description = "GKE cluster location"
   value       = google_container_cluster.platform.location
 }
+
+output "dns_nameservers" {
+  description = "Nameservers for mcce-project.xyz — configure these at your domain registrar"
+  value       = google_dns_managed_zone.platform.name_servers
+}

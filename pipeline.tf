@@ -67,3 +67,9 @@ resource "google_service_account_iam_member" "terraform_pipeline_wif" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${local.github_repo}"
 }
+
+resource "google_storage_bucket_iam_member" "terraform_pipeline_state" {
+  bucket = "${var.project_id}-terraform-state"
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.terraform_pipeline.email}"
+}

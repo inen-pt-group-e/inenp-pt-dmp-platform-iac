@@ -26,6 +26,9 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
+      - name: Install GKE auth plugin
+        run: gcloud components install gke-gcloud-auth-plugin --quiet
+
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.9"

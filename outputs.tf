@@ -27,3 +27,13 @@ output "dns_nameservers" {
   description = "Nameservers for mcce-project.xyz — configure these at your domain registrar"
   value       = google_dns_managed_zone.platform.name_servers
 }
+
+output "workload_identity_provider" {
+  description = "WIF provider resource name for GitHub Actions auth"
+  value       = google_iam_workload_identity_pool_provider.github.name
+}
+
+output "terraform_pipeline_sa_email" {
+  description = "Email of the Terraform pipeline service account"
+  value       = google_service_account.terraform_pipeline.email
+}

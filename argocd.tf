@@ -1,36 +1,75 @@
-# Read the ArgoCD admin password generated in Secret Manager (#11). The
-# plaintext never appears in code — only in the IAM-protected secret and the
-# encrypted Terraform state.
-data "google_secret_manager_secret_version" "argocd_admin_password" {
-  secret  = "argocd-admin-password"
-  project = var.project_id
+variable "gitops_repo_url" {
+  description = "URL of the GitOps repository"
+  type        = string
+  default     = "https://github.com/inen-pt-group-e/inenp-pt-dmp-platform-gitops"
 }
 
-# Derive a STABLE bcrypt hash for the admin password. The htpasswd provider
-# persists the salt in state, avoiding the perpetual diff that the built-in
-# bcrypt() function would cause on every plan.
-resource "htpasswd_password" "argocd_admin" {
-  password = data.google_secret_manager_secret_version.argocd_admin_password.secret_data
+resource "kubernetes_namespace" "argocd" {
+  metadata {
+    name = "argocd"
+  }
 }
 
-# Day-1 bootstrap: ArgoCD is the only platform component installed by
-# Terraform. Everything else (ingress-nginx, cert-manager, ExternalDNS, ESO,
-# Crossplane) is reconciled declaratively by the App-of-Apps root Application
-# defined in the Helm values (extraObjects).
 resource "helm_release" "argocd" {
-  name             = "argocd"
-  namespace        = "argocd"
-  create_namespace = true
-
+  name       = "argocd"
+  namespace  = kubernetes_namespace.argocd.metadata[0].name
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
-  version    = var.argocd_chart_version
+  version    = "~> 7.0"
 
-  values = [templatefile("${path.module}/argocd-values.yaml.tftpl", {
-    admin_password_bcrypt  = htpasswd_password.argocd_admin.bcrypt
-    gitops_repo_url        = var.gitops_repo_url
-    gitops_target_revision = var.gitops_target_revision
-  })]
+  values = [
+    yamlencode({
+      configs = {
+        params = {
+          "server.insecure" = true
+        }
+        secret = {
+          argocdServerAdminPassword = bcrypt(random_password.generated["argocd_admin_password"].result)
+        }
+      }
+      server = {
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "128Mi"
+          }
+          limits = {
+            memory = "256Mi"
+          }
+        }
+      }
+    })
+  ]
 
-  depends_on = [google_container_node_pool.platform]
+  depends_on = [kubernetes_namespace.argocd]
+}
+
+resource "null_resource" "argocd_app_of_apps" {
+  provisioner "local-exec" {
+    command     = <<-EOT
+      kubectl apply -f - <<EOF
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: app-of-apps
+        namespace: argocd
+      spec:
+        project: default
+        source:
+          repoURL: ${var.gitops_repo_url}
+          targetRevision: main
+          path: apps
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: argocd
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+      EOF
+    EOT
+    interpreter = ["bash", "-c"]
+  }
+
+  depends_on = [helm_release.argocd]
 }

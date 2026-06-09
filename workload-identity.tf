@@ -18,7 +18,7 @@ locals {
     crossplane = {
       sa_key        = "crossplane"
       namespace     = "crossplane-system"
-      kubernetes_sa = "crossplane"
+      kubernetes_sa = "provider-gcp"
     }
   }
 }

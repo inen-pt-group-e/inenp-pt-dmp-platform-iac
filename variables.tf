@@ -15,3 +15,9 @@ variable "zone" {
   type        = string
   default     = "europe-west3-a"
 }
+
+variable "argocd_oauth_secret_writers" {
+  description = "Principals (user:/group:) allowed to add the ArgoCD GitHub OAuth client secret version"
+  type        = list(string)
+  default     = ["user:r.matthias3@gmail.com"]
+}

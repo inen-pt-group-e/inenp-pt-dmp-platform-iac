@@ -20,6 +20,41 @@ resource "helm_release" "argocd" {
   values = [
     yamlencode({
       configs = {
+        cm = {
+          url = "https://argocd.mcce-project.xyz"
+          "dex.config" = yamlencode({
+            connectors = [
+              {
+                type = "github"
+                id   = "github"
+                name = "GitHub"
+                config = {
+                  clientID     = "Ov23liw1ie9WvkVepp72"
+                  clientSecret = "$argocd-github-oauth:clientSecret"
+                  orgs = [
+                    {
+                      name  = "inen-pt-group-e"
+                      teams = ["platform-admins", "platform-developers", "tenant-viewers"]
+                    }
+                  ]
+                }
+              }
+            ]
+          })
+        }
+        rbac = {
+          "policy.default" = ""
+          "policy.csv" = join("\n", [
+            "g, inen-pt-group-e:platform-admins, role:admin",
+            "p, role:developer, applications, get, */*, allow",
+            "p, role:developer, applications, sync, */*, allow",
+            "p, role:developer, logs, get, */*, allow",
+            "g, inen-pt-group-e:platform-developers, role:developer",
+            "p, role:tenant-viewer, applications, get, */*, allow",
+            "p, role:tenant-viewer, logs, get, */*, allow",
+            "g, inen-pt-group-e:tenant-viewers, role:tenant-viewer",
+          ])
+        }
         params = {
           "server.insecure" = true
         }

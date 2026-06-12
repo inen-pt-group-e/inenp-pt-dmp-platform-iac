@@ -21,9 +21,9 @@ resource "helm_release" "argocd" {
     yamlencode({
       configs = {
         cm = {
-          url = "https://argocd.mcce-project.xyz"
+          url             = "https://argocd.mcce-project.xyz"
           "admin.enabled" = "false"
-          "dex.config" = yamlencode({
+          "dex.config"    = yamlencode({
             connectors = [
               {
                 type = "github"

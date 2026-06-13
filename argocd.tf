@@ -23,7 +23,7 @@ resource "helm_release" "argocd" {
         cm = {
           url             = "https://argocd.mcce-project.xyz"
           "admin.enabled" = "false"
-          "dex.config"    = yamlencode({
+          "dex.config" = yamlencode({
             connectors = [
               {
                 type = "github"

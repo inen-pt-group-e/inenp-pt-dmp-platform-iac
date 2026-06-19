@@ -57,3 +57,26 @@ resource "google_secret_manager_secret_iam_member" "argocd_github_oauth_writers"
   role      = "roles/secretmanager.secretVersionAdder"
   member    = each.value
 }
+
+# GHCR read:packages PAT for pulling private tenant images.
+# Value is a GitHub PAT with read:packages scope uploaded manually; never in Git.
+# ESO syncs it into each tenant namespace as a dockerconfigjson imagePullSecret.
+resource "google_secret_manager_secret" "ghcr_pull_token" {
+  project   = var.project_id
+  secret_id = "ghcr-pull-token"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis["secretmanager.googleapis.com"]]
+}
+
+resource "google_secret_manager_secret_iam_member" "ghcr_pull_token_writers" {
+  for_each = toset(var.ghcr_pull_token_writers)
+
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.ghcr_pull_token.secret_id
+  role      = "roles/secretmanager.secretVersionAdder"
+  member    = each.value
+}

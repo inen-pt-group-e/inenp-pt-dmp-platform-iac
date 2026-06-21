@@ -41,8 +41,18 @@ resource "google_container_cluster" "platform" {
     services_secondary_range_name = "platform-services"
   }
 
+  # Enforce Kubernetes NetworkPolicies (Calico). Required for tenant network isolation.
+  network_policy {
+    enabled  = true
+    provider = "CALICO"
+  }
+
   addons_config {
     http_load_balancing {
+      disabled = false
+    }
+
+    network_policy_config {
       disabled = false
     }
   }

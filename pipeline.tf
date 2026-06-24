@@ -55,6 +55,7 @@ resource "google_project_iam_member" "terraform_pipeline" {
     "roles/serviceusage.serviceUsageAdmin",
     "roles/iam.serviceAccountUser",
     "roles/storage.admin",
+    "roles/monitoring.editor",
   ])
 
   project = var.project_id

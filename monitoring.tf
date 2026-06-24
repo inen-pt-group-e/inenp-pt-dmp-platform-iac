@@ -17,6 +17,7 @@ variable "alert_notification_email" {
 
 resource "google_monitoring_uptime_check_config" "tenant_app" {
   project      = var.project_id
+  depends_on   = [google_project_iam_member.terraform_pipeline]
   display_name = "tenant-app-uptime"
   timeout      = "10s"
   period       = "60s"
@@ -44,6 +45,7 @@ resource "google_monitoring_uptime_check_config" "tenant_app" {
 
 resource "google_monitoring_notification_channel" "email" {
   project      = var.project_id
+  depends_on   = [google_project_iam_member.terraform_pipeline]
   display_name = "Platform Alerts Email"
   type         = "email"
 
@@ -54,6 +56,7 @@ resource "google_monitoring_notification_channel" "email" {
 
 resource "google_monitoring_alert_policy" "tenant_app_down" {
   project      = var.project_id
+  depends_on   = [google_project_iam_member.terraform_pipeline]
   display_name = "Tenant app endpoint down"
   combiner     = "OR"
 
@@ -87,7 +90,8 @@ resource "google_monitoring_alert_policy" "tenant_app_down" {
 }
 
 resource "google_monitoring_dashboard" "platform" {
-  project = var.project_id
+  project    = var.project_id
+  depends_on = [google_project_iam_member.terraform_pipeline]
 
   dashboard_json = jsonencode({
     displayName = "Platform & Tenant Monitoring"

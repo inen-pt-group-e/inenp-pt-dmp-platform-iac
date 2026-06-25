@@ -24,7 +24,6 @@ resource "google_container_cluster" "platform" {
   network    = google_compute_network.vpc.self_link
   subnetwork = google_compute_subnetwork.subnet.self_link
 
-  # Disable default node pool — we manage our own
   remove_default_node_pool = true
   initial_node_count       = 1
 
@@ -41,7 +40,6 @@ resource "google_container_cluster" "platform" {
     services_secondary_range_name = "platform-services"
   }
 
-  # Enforce Kubernetes NetworkPolicies (Calico). Required for tenant network isolation.
   network_policy {
     enabled  = true
     provider = "CALICO"
@@ -71,7 +69,10 @@ resource "google_container_node_pool" "platform" {
   location = var.zone
   cluster  = google_container_cluster.platform.name
 
-  node_count = 2
+  autoscaling {
+    min_node_count = 2
+    max_node_count = 3
+  }
 
   node_config {
     machine_type    = "e2-standard-2"
@@ -88,5 +89,9 @@ resource "google_container_node_pool" "platform" {
   management {
     auto_repair  = true
     auto_upgrade = true
+  }
+
+  lifecycle {
+    ignore_changes = [node_count]
   }
 }

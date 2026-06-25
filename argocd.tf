@@ -57,7 +57,8 @@ resource "helm_release" "argocd" {
           ])
         }
         params = {
-          "server.insecure" = true
+          "server.insecure"             = true
+          "controller.diff.server.side" = true
         }
         secret = {
           argocdServerAdminPassword = bcrypt(random_password.generated["argocd_admin_password"].result)

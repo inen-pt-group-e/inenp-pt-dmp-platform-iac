@@ -71,7 +71,10 @@ resource "google_container_node_pool" "platform" {
   location = var.zone
   cluster  = google_container_cluster.platform.name
 
-  node_count = 2
+  autoscaling {
+    min_node_count = 2
+    max_node_count = 3
+  }
 
   node_config {
     machine_type    = "e2-standard-2"
@@ -89,4 +92,8 @@ resource "google_container_node_pool" "platform" {
     auto_repair  = true
     auto_upgrade = true
   }
+
+  lifecycle {
+    ignore_changes = [node_count]
+  }  
 }

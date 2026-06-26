@@ -8,7 +8,7 @@ This repo provisions the cluster and platform foundations; from there **GitOps
 ## Scope
 
 After the IaC run, the platform exists and ArgoCD takes over.
-Two documented secret exceptions exists(see [Manual exceptions](#manual-exceptions)).
+Two documented secret exceptions exist (see [Manual exceptions](#manual-exceptions)).
 
 What this repository provisions:
 
@@ -16,7 +16,7 @@ What this repository provisions:
 | --- | --- |
 | `apis.tf` | Enables the required Google Cloud APIs |
 | `networking.tf` | VPC + subnet with secondary ranges (`platform-pods`, `platform-services`) |
-| `gke.tf` | Zonal GKE cluster `platform`, node pool (2× `e2-standard-2`), Workload Identity, **Calico network policy**, HTTP load balancing |
+| `gke.tf` | Zonal GKE cluster `platform`, autoscaling node pool (2–3× `e2-standard-2`), Workload Identity, **Calico network policy**, HTTP load balancing |
 | `iam.tf` | Platform service accounts and IAM bindings |
 | `workload-identity.tf` | Workload Identity bindings for ESO, ExternalDNS, cert-manager, Crossplane |
 | `dns.tf` | Public Cloud DNS managed zone `mcce-project.xyz` |
@@ -28,7 +28,7 @@ What this repository provisions:
 
 ## Architecture (GitOps handoff)
 
-```
+```text
 terraform apply  ->  GKE + VPC + IAM/Workload Identity + DNS + Secret Manager + ArgoCD
                      + app-of-apps root  ->  ArgoCD syncs the GitOps repo
                      ->  ingress-nginx, ESO, cert-manager, ExternalDNS, Crossplane,
@@ -74,9 +74,10 @@ All pipelines authenticate to Google Cloud via **OIDC / Workload Identity Federa
 - `plan.yml` — `terraform plan` on every PR
 - `apply.yml` — `terraform apply` on push to `main`
 
-> Merging an IaC PR to `main` triggers the apply. The apply reconciles **all** of `main`'s
-> state, so e.g. `node_count = 2` in `gke.tf` will scale the cluster back to 2 nodes if it was
-> scaled to 0 out-of-band.
+> Merging an IaC PR to `main` triggers the apply, which reconciles **all** of `main`'s state.
+> The node pool uses **cluster autoscaling (2–3 nodes)** together with
+> `lifecycle { ignore_changes = [node_count] }`, so GKE owns the live node count and a scale
+> event (manual or by the autoscaler) is **not** reverted by the next apply.
 
 ## Secrets management
 
@@ -116,10 +117,13 @@ self-hosted Prometheus/Grafana is required.
 
 ## Capacity & cost
 
-The cluster is **zonal** with 2× `e2-standard-2` (cost-effective, highly available). To save
-cost the node pool is scaled to 0 when idle. Note that 2 nodes (after Kubernetes/OS overhead)
-host roughly two tenants; a third concurrent tenant requires a third node. Capacity and cost
-planning, including plan-vs-actual, is tracked in
+The cluster is **zonal** and uses a **cluster-autoscaling** node pool of **2–3×
+`e2-standard-2`** (cost-effective, highly available). The autoscaler keeps a **minimum of 2
+nodes** for the platform stack plus roughly two tenants, and adds a **third node on demand**
+when tenant load requires it; the platform becomes **CPU-bound before it is memory-bound**, so
+CPU is the scaling trigger. When the extra load is gone the pool scales back to 2. The maximum
+of 3 nodes caps cost while still allowing a live demo tenant to be provisioned. Capacity and
+cost planning, including plan-vs-actual, is tracked in
 [issue #1](https://github.com/inen-pt-group-e/inenp-pt-dmp-platform-iac/issues/1).
 
 ## Variables
@@ -148,6 +152,16 @@ containers and write permissions.
 | [`inenp-pt-dmp-platform-gitops`](https://github.com/inen-pt-group-e/inenp-pt-dmp-platform-gitops) | ArgoCD app-of-apps; platform components + tenants (main docs entry point) |
 | [`inenp-pt-dmp-backend`](https://github.com/inen-pt-group-e/inenp-pt-dmp-backend) | REST API container source (public) |
 | [`inenp-pt-dmp-frontend`](https://github.com/inen-pt-group-e/inenp-pt-dmp-frontend) | SPA frontend container source (private) |
+
+## GenAI Usage
+
+- **Architecture & approach** — planning the IaC layout (GKE, networking, Workload Identity,
+  ArgoCD bootstrap) and the no-click GitOps handoff.
+- **File / code authoring** — assistance writing Terraform resources, IAM / Workload-Identity
+  bindings and the CI/CD pipeline workflows.
+- **Troubleshooting** — debugging terraform plan/apply, node pool autoscaling and Secret
+  Manager / ESO issues.
+- **Text creation** — providing generic text for issues and pull requests.
 
 ## Contributing
 
